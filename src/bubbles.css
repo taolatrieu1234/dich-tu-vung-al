@@ -1,0 +1,427 @@
+/* bubbles.css - Giao diện Shadow DOM Bong Bóng Đám Mây (Fixed Viewport) */
+
+:host {
+  all: initial;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483647; /* Đảm bảo luôn nổi trên cùng mọi web app kể cả Notion */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Container chứa cụm bong bóng (Fixed theo tọa độ Viewport) */
+.cloud-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
+.cloud-container[data-position="above"] {
+  transform: translateY(-100%);
+  animation: cloudEntranceAbove 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cloud-container[data-position="below"] {
+  transform: translateY(0);
+  animation: cloudEntranceBelow 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cloudEntranceAbove {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%) scale(0.9) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-100%) scale(1) translateY(0);
+  }
+}
+
+@keyframes cloudEntranceBelow {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.9) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) translateY(0);
+  }
+}
+
+/* Bong bóng cơ bản (Base Bubble) */
+.cloud-bubble {
+  position: absolute;
+  pointer-events: auto;
+  user-select: none;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  border-radius: 14px;
+  box-shadow: 
+    0 12px 36px -4px rgba(0, 0, 0, 0.65),
+    0 4px 14px rgba(99, 102, 241, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.cloud-bubble:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 16px 42px -4px rgba(0, 0, 0, 0.75),
+    0 6px 18px rgba(99, 102, 241, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+/* 1. Bong bóng Phát âm / Romaji */
+.bubble-reading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #c7d2fe;
+  background: rgba(30, 27, 75, 0.92);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.bubble-reading.is-sentence {
+  white-space: normal;
+  max-width: 360px;
+  min-width: 240px;
+  border-radius: 14px;
+  padding: 9px 14px;
+  line-height: 1.45;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.reading-icon {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.reading-icon:hover {
+  transform: scale(1.2);
+  color: #38bdf8;
+}
+
+/* 2. Bong bóng Từ loại */
+.bubble-pos {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #38bdf8;
+  background: rgba(8, 51, 68, 0.92);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+/* 3. Bong bóng Nghĩa Tiếng Việt (Hero Center) */
+.bubble-meaning {
+  padding: 14px 18px;
+  border-radius: 16px;
+  white-space: normal;
+  max-width: 330px;
+  min-width: 220px;
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.bubble-meaning.is-sentence {
+  max-width: 360px;
+  min-width: 260px;
+}
+
+.meaning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.meaning-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-bubble-action {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.btn-bubble-action:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.meaning-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+/* 4. Bong bóng Ví dụ đời thường */
+.bubble-example {
+  padding: 10px 14px;
+  border-radius: 14px;
+  white-space: normal;
+  max-width: 330px;
+  min-width: 220px;
+  background: rgba(23, 23, 37, 0.94);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.example-original {
+  font-size: 12.5px;
+  font-style: italic;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  position: relative;
+  padding-left: 12px;
+}
+
+.example-original::before {
+  content: "“";
+  position: absolute;
+  left: 0;
+  top: -2px;
+  font-size: 14px;
+  color: #818cf8;
+}
+
+.example-vietnamese {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.35;
+  padding-left: 12px;
+}
+
+/* 5. Bong bóng Loading */
+.bubble-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #c7d2fe;
+  background: rgba(15, 23, 42, 0.94);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+  animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #818cf8;
+  animation: dotBounce 1.2s infinite ease-in-out;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.2s;
+  background-color: #06b6d4;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.4s;
+  background-color: #a5b4fc;
+}
+
+@keyframes loadingPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 28px rgba(99, 102, 241, 0.55);
+  }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* 6. Bong bóng Lỗi */
+.bubble-error {
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  color: #fca5a5;
+  background: rgba(30, 10, 15, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  max-width: 320px;
+  white-space: normal;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.error-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+/* Nút đóng góc trên */
+.bubble-close-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #cbd5e1;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.bubble-close-btn:hover {
+  background: #f43f5e;
+  color: #ffffff;
+  border-color: #f43f5e;
+  transform: scale(1.15);
+}
+
+/* Nút Ghim (Pin Button) */
+.bubble-pin-btn {
+  position: absolute;
+  top: -8px;
+  right: 18px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #cbd5e1;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.bubble-pin-btn:hover {
+  background: #334155;
+  color: #ffffff;
+  transform: scale(1.15);
+}
+
+.bubble-pin-btn.is-pinned {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+}
+
+/* Nút copy trong bong bóng Reading */
+.reading-copy-icon {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease, color 0.15s ease;
+  margin-left: 2px;
+}
+
+.reading-copy-icon:hover {
+  transform: scale(1.2);
+  color: #38bdf8;
+}
+
+/* Icon Đám Mây Nổi Nhanh (Floating Quick Trigger) */
+.cloud-quick-trigger {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #06b6d4);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 2147483647;
+  animation: quickTriggerEntrance 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cloud-quick-trigger:hover {
+  transform: scale(1.2) translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.7);
+}
+
+@keyframes quickTriggerEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
