@@ -94,10 +94,10 @@ The user selected a FULL SENTENCE or CLAUSE to translate:
 Target Translation Language: ${langLabel}
 
 Instructions:
-1. Detect whether the sentence is Japanese (ja) or English (en).
+1. Detect whether the sentence is Japanese (ja) or English (en). Set "detected_lang": "ja" or "en".
 2. For "reading":
    - If Japanese: Provide the full, natural Romaji reading of the entire sentence (e.g. "Otouto no tokoro ni otoko no ko ga umareta.").
-   - If English: Provide natural phonetic transcription or standard sentence pronunciation.
+   - If English: Return an empty string "" (DO NOT provide reading or pronunciation for English sentences; only Vietnamese translation is needed).
 3. For "meaning":
    - Provide an accurate, natural, fluent translation of the entire sentence in ${langLabel}.
 4. CRITICAL: Do NOT provide part_of_speech. Do NOT provide extra examples.
@@ -107,7 +107,7 @@ Return strictly a valid JSON object:
   "mode": "sentence",
   "detected_lang": "ja",
   "word": "${sentence.replace(/"/g, '\\"')}",
-  "reading": "Full romaji or phonetic reading of the entire sentence",
+  "reading": "Full romaji for Japanese, or empty string \\"\\" for English",
   "meaning": "Natural translation in ${langLabel}"
 }`;
   },
@@ -120,8 +120,8 @@ Context Sentence: "${contextSentence || 'N/A'}"
 Target Explanation Language: ${langLabel}
 
 Instructions:
-1. Detect language (ja or en).
-2. If this text is actually a full sentence or clause, return "mode": "sentence", "reading", "meaning", without part_of_speech and example.
+1. Detect language (ja or en) and set "detected_lang".
+2. If this text is actually a full sentence or clause, return "mode": "sentence", "reading": (Romaji for Japanese, empty string "" for English), "meaning", without part_of_speech and example.
 3. If this is a single word or short phrase, return "mode": "word", "part_of_speech", "reading", "meaning", and "example".
 
 Return strictly a valid JSON object:
@@ -298,7 +298,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'lookup-cloud-dict',
-      title: 'Tra đám mây: "%s"',
+      title: 'Hyouka: "%s"',
       contexts: ['selection']
     });
     console.log('[CloudDict] Context menu đã được tạo thành công.');

@@ -296,9 +296,13 @@
         const container = this.shadowRoot.querySelector('.cloud-container');
         if (container) {
           container.style.opacity = '0';
-          container.style.transform = container.getAttribute('data-position') === 'above' 
-            ? 'translateY(-100%) scale(0.85)' 
-            : 'translateY(0) scale(0.85)';
+          if (container.classList.contains('is-dragged') || container.style.transform === 'none') {
+            container.style.transform = 'scale(0.85)';
+          } else {
+            container.style.transform = container.getAttribute('data-position') === 'above' 
+              ? 'translateY(-100%) scale(0.85)' 
+              : 'translateY(0) scale(0.85)';
+          }
           container.style.transition = 'all 0.15s ease';
           setTimeout(() => {
             if (this.hostElement) {
@@ -370,17 +374,36 @@
       this.hideTriggerIcon();
       const root = this.ensureShadowRoot();
       const existingContainer = root.querySelector('.cloud-container');
-      if (existingContainer) existingContainer.remove();
+      let savedPos = null;
+      if (existingContainer) {
+        if (existingContainer.classList.contains('is-dragged')) {
+          savedPos = {
+            left: existingContainer.style.left,
+            top: existingContainer.style.top
+          };
+        }
+        existingContainer.remove();
+      }
 
       const pos = this.calculatePlacement(rect);
 
       const container = document.createElement('div');
       container.className = 'cloud-container';
-      container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
-      container.style.left = `${pos.left}px`;
-      container.style.top = `${pos.top}px`;
+      if (savedPos) {
+        container.classList.add('is-dragged');
+        container.style.left = savedPos.left;
+        container.style.top = savedPos.top;
+        container.style.transform = 'none';
+      } else {
+        container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
+        container.style.left = `${pos.left}px`;
+        container.style.top = `${pos.top}px`;
+      }
 
       container.innerHTML = `
+        <div class="cloud-drag-bar" title="Kéo thả để di chuyển bong bóng khắp màn hình">
+          <div class="cloud-drag-pill"></div>
+        </div>
         <div class="cloud-bubble bubble-loading" style="position: relative;">
           <span>☁️ Đang tra <strong>"${escapeHTML(queryWord)}"</strong></span>
           <div class="loading-dots">
@@ -392,6 +415,7 @@
       `;
 
       root.appendChild(container);
+      this.attachDragListeners(container);
       this.attachDismissListeners();
     },
 
@@ -399,17 +423,33 @@
       this.hideTriggerIcon();
       const root = this.ensureShadowRoot();
       const existingContainer = root.querySelector('.cloud-container');
-      if (existingContainer) existingContainer.remove();
+      let savedPos = null;
+      if (existingContainer) {
+        if (existingContainer.classList.contains('is-dragged')) {
+          savedPos = {
+            left: existingContainer.style.left,
+            top: existingContainer.style.top
+          };
+        }
+        existingContainer.remove();
+      }
 
       const pos = this.calculatePlacement(rect);
 
       const container = document.createElement('div');
       container.className = 'cloud-container';
-      container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
-      container.style.left = `${pos.left}px`;
-      container.style.top = `${pos.top}px`;
+      if (savedPos) {
+        container.classList.add('is-dragged');
+        container.style.left = savedPos.left;
+        container.style.top = savedPos.top;
+        container.style.transform = 'none';
+      } else {
+        container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
+        container.style.left = `${pos.left}px`;
+        container.style.top = `${pos.top}px`;
+      }
 
-      const detectedLang = result.detected_lang || 'ja';
+      const detectedLang = (result.detected_lang || 'ja').toLowerCase();
       const word = result.word || queryWord;
       const reading = result.reading || '';
       const posText = result.part_of_speech || '';
@@ -419,12 +459,25 @@
       // Nhận diện chế độ: Dịch Câu (Sentence Mode) vs Tra Từ Vựng (Word Mode)
       const isSentence = result.mode === 'sentence' || (!posText && !example);
 
+      // Kiểm tra có ký tự tiếng Nhật (Kanji/Kana) không
+      const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(word || queryWord);
+      // Nếu là câu và là tiếng Anh (hoặc không chứa ký tự tiếng Nhật)
+      const isEnglishSentence = isSentence && (detectedLang === 'en' || !hasJapanese);
+      // Chỉ hiển thị bong bóng phát âm/Romaji cho câu tiếng Nhật, KHÔNG hiển thị cho câu tiếng Anh
+      const showSentenceReading = isSentence && !isEnglishSentence && Boolean(reading);
+
       if (isSentence) {
         // ==========================================
         // GIAO DIỆN CHẾ ĐỘ DỊCH CÂU (SENTENCE MODE)
-        // Chỉ hiện 2 bong bóng: Romaji + Bản dịch
+        // Tiếng Anh: Chỉ in ra duy nhất nghĩa tiếng Việt
+        // Tiếng Nhật: In ra Romaji + nghĩa tiếng Việt
         // ==========================================
         container.innerHTML = `
+          <!-- Thanh kéo thả (Drag Handle) -->
+          <div class="cloud-drag-bar" title="Kéo thả để di chuyển bong bóng khắp màn hình">
+            <div class="cloud-drag-pill"></div>
+          </div>
+
           <!-- Nút Ghim (Pin) & Nút Đóng -->
           <div class="bubble-pin-btn ${this.isPinned ? 'is-pinned' : ''}" id="btn-pin" title="${this.isPinned ? 'Bỏ ghim (cho phép tự đóng)' : 'Ghim cố định (không tự đóng khi click ngoài)'}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -434,8 +487,8 @@
           </div>
           <div class="bubble-close-btn" id="btn-close" title="Đóng (Esc)">✕</div>
 
-          <!-- 1. Bong bóng Romaji / Cách đọc cả câu -->
-          ${reading ? `
+          <!-- 1. Bong bóng Romaji / Cách đọc cả câu (Chỉ dành cho Tiếng Nhật) -->
+          ${showSentenceReading ? `
             <div style="margin-bottom: 8px;">
               <div class="cloud-bubble bubble-reading is-sentence" style="position: static; display: flex; align-items: flex-start; justify-content: space-between;">
                 <div style="flex: 1; word-break: break-word; padding-right: 6px;">${escapeHTML(reading)}</div>
@@ -457,19 +510,29 @@
             </div>
           ` : ''}
 
-          <!-- 2. Bong bóng Bản dịch tiếng Việt -->
+          <!-- 2. Bong bóng Bản dịch tiếng Việt (Đối với câu tiếng Anh chỉ hiển thị duy nhất ô này) -->
           <div class="cloud-bubble bubble-meaning is-sentence" style="position: static;">
             <div class="meaning-header">
               <span style="font-size: 11.5px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em;">
                 Dịch câu
                 ${result.fromCache ? '<span style="font-size: 10px; color: #10b981; font-weight: normal; background: rgba(16, 185, 129, 0.15); padding: 1px 6px; border-radius: 8px; margin-left: 6px;">Cache</span>' : ''}
               </span>
-              <button class="btn-bubble-action" id="btn-copy" title="Sao chép bản dịch">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-              </button>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                ${isEnglishSentence ? `
+                  <button class="btn-bubble-action" id="btn-speak" title="Nghe đọc câu tiếng Anh">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                  </button>
+                ` : ''}
+                <button class="btn-bubble-action" id="btn-copy" title="Sao chép bản dịch">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="meaning-text" style="font-size: 14.5px; line-height: 1.5; color: #f8fafc;">${escapeHTML(meaning)}</div>
           </div>
@@ -480,6 +543,11 @@
         // Đầy đủ 4 bong bóng: Romaji, Từ loại, Nghĩa, Ví dụ
         // ==========================================
         container.innerHTML = `
+          <!-- Thanh kéo thả (Drag Handle) -->
+          <div class="cloud-drag-bar" title="Kéo thả để di chuyển bong bóng khắp màn hình">
+            <div class="cloud-drag-pill"></div>
+          </div>
+
           <!-- Nút Ghim (Pin) & Nút Đóng -->
           <div class="bubble-pin-btn ${this.isPinned ? 'is-pinned' : ''}" id="btn-pin" title="${this.isPinned ? 'Bỏ ghim (cho phép tự đóng)' : 'Ghim cố định (không tự đóng khi click ngoài)'}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -569,7 +637,10 @@
 
       // Gắn sự kiện nút Nghe phát âm
       const speakBtn = root.getElementById('btn-speak');
-      if (speakBtn) speakBtn.onclick = () => this.speak(word, detectedLang);
+      if (speakBtn) {
+        const speakLang = isEnglishSentence ? 'en' : detectedLang;
+        speakBtn.onclick = () => this.speak(word, speakLang);
+      }
 
       // Gắn sự kiện nút Copy Romaji / Reading
       const copyReadingBtn = root.getElementById('btn-copy-reading');
@@ -617,6 +688,7 @@
         };
       }
 
+      this.attachDragListeners(container);
       this.attachDismissListeners();
     },
 
@@ -624,19 +696,38 @@
       this.hideTriggerIcon();
       const root = this.ensureShadowRoot();
       const existingContainer = root.querySelector('.cloud-container');
-      if (existingContainer) existingContainer.remove();
+      let savedPos = null;
+      if (existingContainer) {
+        if (existingContainer.classList.contains('is-dragged')) {
+          savedPos = {
+            left: existingContainer.style.left,
+            top: existingContainer.style.top
+          };
+        }
+        existingContainer.remove();
+      }
 
       const pos = this.calculatePlacement(rect);
 
       const container = document.createElement('div');
       container.className = 'cloud-container';
-      container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
-      container.style.left = `${pos.left}px`;
-      container.style.top = `${pos.top}px`;
+      if (savedPos) {
+        container.classList.add('is-dragged');
+        container.style.left = savedPos.left;
+        container.style.top = savedPos.top;
+        container.style.transform = 'none';
+      } else {
+        container.setAttribute('data-position', pos.isAbove ? 'above' : 'below');
+        container.style.left = `${pos.left}px`;
+        container.style.top = `${pos.top}px`;
+      }
 
       const isKeyError = errorMsg.includes('API Key');
 
       container.innerHTML = `
+        <div class="cloud-drag-bar" title="Kéo thả để di chuyển bong bóng khắp màn hình">
+          <div class="cloud-drag-pill"></div>
+        </div>
         <div class="bubble-close-btn" id="btn-close" title="Đóng">✕</div>
         <div class="cloud-bubble bubble-error" style="position: static;">
           <span class="error-icon">⚠️</span>
@@ -661,7 +752,93 @@
         };
       }
 
+      this.attachDragListeners(container);
       this.attachDismissListeners();
+    },
+
+    attachDragListeners(container) {
+      if (!container) return;
+
+      const onPointerDown = (e) => {
+        // Chỉ xử lý chuột trái (hoặc chạm cảm ứng/bút)
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+        // Bỏ qua nếu bấm vào các nút hành động, icon tương tác, input hoặc link
+        const interactive = e.target.closest(
+          'button, #btn-close, #btn-pin, #btn-speak, #btn-copy, #btn-copy-reading, #link-open-options, a, input'
+        );
+        if (interactive) return;
+
+        // Chỉ bắt đầu kéo nếu click vào khu vực bong bóng hoặc thanh drag
+        const draggableArea = e.target.closest('.cloud-bubble, .cloud-drag-bar, .cloud-drag-pill');
+        if (!draggableArea) return;
+
+        e.preventDefault();
+
+        // 1. Đọc kích thước và tọa độ thực tế trên viewport
+        const rect = container.getBoundingClientRect();
+
+        // 2. Chuyển đổi transform sang pixel cứng để kéo không bị giật vị trí
+        container.style.animation = 'none';
+        container.style.transform = 'none';
+        container.style.transition = 'none';
+        container.style.left = `${rect.left}px`;
+        container.style.top = `${rect.top}px`;
+        container.classList.add('is-dragging');
+
+        const startPointerX = e.clientX;
+        const startPointerY = e.clientY;
+        const startLeft = rect.left;
+        const startTop = rect.top;
+        let hasMoved = false;
+
+        const onPointerMove = (moveEvt) => {
+          const deltaX = moveEvt.clientX - startPointerX;
+          const deltaY = moveEvt.clientY - startPointerY;
+
+          if (!hasMoved && (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)) {
+            hasMoved = true;
+          }
+
+          let newLeft = startLeft + deltaX;
+          let newTop = startTop + deltaY;
+
+          // Giới hạn trong viewport (không bị kéo lọt ra ngoài màn hình)
+          const margin = 8;
+          const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+          const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+
+          newLeft = Math.max(margin, Math.min(newLeft, maxLeft));
+          newTop = Math.max(margin, Math.min(newTop, maxTop));
+
+          container.style.left = `${newLeft}px`;
+          container.style.top = `${newTop}px`;
+        };
+
+        const onPointerUp = () => {
+          window.removeEventListener('pointermove', onPointerMove, true);
+          window.removeEventListener('pointerup', onPointerUp, true);
+          window.removeEventListener('pointercancel', onPointerUp, true);
+          container.classList.remove('is-dragging');
+
+          if (hasMoved) {
+            container.classList.add('is-dragged');
+            // Tự động ghim (Pin) để khi cuộn trang hoặc click ngoài nhẹ không làm biến mất vị trí người dùng vừa đặt
+            this.isPinned = true;
+            const pinBtn = container.querySelector('#btn-pin');
+            if (pinBtn) {
+              pinBtn.classList.add('is-pinned');
+              pinBtn.title = 'Bỏ ghim (cho phép tự đóng)';
+            }
+          }
+        };
+
+        window.addEventListener('pointermove', onPointerMove, true);
+        window.addEventListener('pointerup', onPointerUp, true);
+        window.addEventListener('pointercancel', onPointerUp, true);
+      };
+
+      container.addEventListener('pointerdown', onPointerDown);
     },
 
     handleOutsideClick: null,

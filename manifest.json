@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tra Từ Đám Mây - Cloud Dictionary",
+  "name": "Hyouka",
   "version": "1.0.0",
   "description": "Tra cứu từ vựng tiếng Anh & Nhật dạng bong bóng đám mây thông minh qua Gemini LLM.",
   "permissions": [
